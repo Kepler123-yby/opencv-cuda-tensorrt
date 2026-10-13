@@ -65,15 +65,24 @@ find_library(TensorRT_NVINFER_LIBRARY nvinfer
     HINTS "${_tensorrt_root}"
     PATH_SUFFIXES lib lib64
     REQUIRED)
+find_library(TensorRT_ONNXPARSER_LIBRARY nvonnxparser
+    HINTS "${_tensorrt_root}"
+    PATH_SUFFIXES lib lib64
+    REQUIRED)
 
 add_library(TensorRT::nvinfer UNKNOWN IMPORTED)
 set_target_properties(TensorRT::nvinfer PROPERTIES
     IMPORTED_LOCATION "${TensorRT_NVINFER_LIBRARY}"
     INTERFACE_INCLUDE_DIRECTORIES "${TensorRT_INCLUDE_DIR}")
+add_library(TensorRT::nvonnxparser UNKNOWN IMPORTED)
+set_target_properties(TensorRT::nvonnxparser PROPERTIES
+    IMPORTED_LOCATION "${TensorRT_ONNXPARSER_LIBRARY}"
+    INTERFACE_INCLUDE_DIRECTORIES "${TensorRT_INCLUDE_DIR}")
 
-add_executable(test_env test_env.cpp)
-add_executable(test_operator test_operator.cpp)
-add_executable(test_preprocess test_preprocess.cpp)
+add_executable(test_env opencv_cuda/test_env.cpp)
+add_executable(test_operator opencv_cuda/test_operator.cpp)
+add_executable(test_preprocess opencv_cuda/test_preprocess.cpp)
+add_executable(build_engine tensorrt/build_engine.cpp)
 target_link_libraries(test_env PRIVATE
     ${OpenCV_LIBS}
     CUDA::cudart
@@ -85,11 +94,15 @@ target_link_libraries(test_operator PRIVATE
 target_link_libraries(test_preprocess PRIVATE
     ${OpenCV_LIBS}
     CUDA::cudart)
+target_link_libraries(build_engine PRIVATE
+    ${OpenCV_LIBS}
+    CUDA::cudart
+    TensorRT::nvinfer
+    TensorRT::nvonnxparser)
 
 get_filename_component(_tensorrt_libdir "${TensorRT_NVINFER_LIBRARY}" DIRECTORY)
-# Preserve the local library locations for launching the executable from the
-# build directory without requiring a shell-specific LD_LIBRARY_PATH.
-set_target_properties(test_env PROPERTIES
-    BUILD_RPATH "/home/kepler/opt/opencv-cuda/lib;${_tensorrt_libdir};${CUDAToolkit_ROOT}/lib64")
-set_target_properties(test_preprocess PROPERTIES
-    BUILD_RPATH "/home/kepler/opt/opencv-cuda/lib;${CUDAToolkit_ROOT}/lib64")
+get_filename_component(_tensorrt_parser_libdir "${TensorRT_ONNXPARSER_LIBRARY}" DIRECTORY)
+# Preserve library locations for launching executables from the build directory.
+set(_runtime_rpath "${OpenCV_DIR}/../../..;${_tensorrt_libdir};${_tensorrt_parser_libdir};${CUDAToolkit_ROOT}/lib64")
+set_target_properties(test_env test_operator test_preprocess build_engine PROPERTIES
+    BUILD_RPATH "${_runtime_rpath}")
