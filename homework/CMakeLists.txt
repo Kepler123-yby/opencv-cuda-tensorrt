@@ -83,6 +83,7 @@ add_executable(test_env opencv_cuda/test_env.cpp)
 add_executable(test_operator opencv_cuda/test_operator.cpp)
 add_executable(test_preprocess opencv_cuda/test_preprocess.cpp)
 add_executable(build_engine tensorrt/build_engine.cpp)
+add_executable(run_infer tensorrt/run_infer.cpp)
 target_link_libraries(test_env PRIVATE
     ${OpenCV_LIBS}
     CUDA::cudart
@@ -99,10 +100,13 @@ target_link_libraries(build_engine PRIVATE
     CUDA::cudart
     TensorRT::nvinfer
     TensorRT::nvonnxparser)
+target_link_libraries(run_infer PRIVATE
+    CUDA::cudart
+    TensorRT::nvinfer)
 
 get_filename_component(_tensorrt_libdir "${TensorRT_NVINFER_LIBRARY}" DIRECTORY)
 get_filename_component(_tensorrt_parser_libdir "${TensorRT_ONNXPARSER_LIBRARY}" DIRECTORY)
 # Preserve library locations for launching executables from the build directory.
 set(_runtime_rpath "${OpenCV_DIR}/../../..;${_tensorrt_libdir};${_tensorrt_parser_libdir};${CUDAToolkit_ROOT}/lib64")
-set_target_properties(test_env test_operator test_preprocess build_engine PROPERTIES
+set_target_properties(test_env test_operator test_preprocess build_engine run_infer PROPERTIES
     BUILD_RPATH "${_runtime_rpath}")
