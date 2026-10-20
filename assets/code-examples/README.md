@@ -118,18 +118,19 @@
 
 | # | Filename | What to Demonstrate | Status |
 |---|----------|---------------------|--------|
-| 1 | `3.3-infer-modes.cpp` | sync / 单路 async / N 路并行（多 context + 多 stream，保序回收） | [ ] |
+| 1 | `3.3-infer-modes.cpp` | sync / 单路 async / N 路并行（多 context + 多 stream，保序回收） | [x] 已生成、编译通过；GPU 验证待完成 |
 
 **Code requirements:**
-- [ ] 三种模式共用同一 engine、同一输入
-- [ ] 多路并行每路独立 buffer + stream，轮转提交、轮转回收
-- [ ] 打印每模式 FPS 与平均耗时
-- [ ] 破坏性实验：复用 buffer 导致错帧（可选，附注释）
+- [x] 三种模式共用同一 engine、同一组按编号变化的输入
+- [x] 多路并行每路独立 context + buffer + stream + event，复用前回收，尾部排空
+- [x] 单独正确性验证，对照同步参考，检查全输出容差与非有限值
+- [x] 打印每模式 FPS 与逐请求 mean / p50 / p95，包含背压与 fill/drain
+- [x] 提供拒绝忙槽位复用、错帧回收和重复回收的检查；不把竞争必现当作验收条件
 
 **Verification:**
 - [ ] 正确性通过后报告三模式 FPS 与延迟；解释并行收益或无收益，不要求并行一定更快
 
-> **参考实现**：`lessons/module-3/3.3-sync-async-parallel.md` 已含代码骨架。
+> **参考实现**：课文 [`3.3-sync-async-parallel.md`](../../lessons/module-3/3.3-sync-async-parallel.md)、完整程序 [`3.3-infer-modes.cpp`](3.3-infer-modes.cpp)、CPU 调度检查 [`tests/verify-module3.py`](tests/verify-module3.py)、验证记录 [`module-3-verification.md`](module-3-verification.md)。示例限定静态一进一出 FP32/LINEAR/DEVICE；编译和 FakeSlot 调度检查不等于 GPU 正确性或性能验证。
 
 ---
 
@@ -191,7 +192,7 @@
 | 2.2 | 1 | 0 | CUDA 预处理 |
 | 3.1 | 1 | 0 | engine 构建/缓存 |
 | 3.2 | 1 | 0 | buffer + stream |
-| 3.3 | 1 | 0 | 三推理模式（已出稿） |
+| 3.3 | 1 | 0 | 完整样例已编译，CPU 调度检查通过；GPU 验证待完成 |
 | 4.1 | 1 | 0 | 课文 kernel 片段已真机验证；完整独立样例待补 |
 | 4.2 | 1 | 0 | 课文 kernel/NMS 片段已真机验证；完整独立样例待补 |
 | 5.3 | 1（多文件） | 0 | 课文、接口与调度片段已补；完整可运行 capstone 待实现 |
@@ -225,8 +226,8 @@ Module 5 三节课时已出稿。完整 detector 是 5.3 的综合实现作业�
 
 | Tier | SLT | 需要 | 预计工作量 |
 |------|-----|------|-----------|
-| 1：独立 | 2.1, 2.2, 3.3 | OpenCV CUDA + CUDA（无需模型） | 低 |
-| 2：需模型/后端 | 1.2, 3.1, 3.2, 4.1, 4.2 | TensorRT + 一个 ONNX 模型 | 中 |
+| 1：独立 | 2.1, 2.2 | OpenCV CUDA + CUDA（无需模型） | 低 |
+| 2：需模型/后端 | 1.2, 3.1, 3.2, 3.3, 4.1, 4.2 | TensorRT + ONNX / 已构建 Engine；3.3 的 CPU 调度检查无需 GPU | 中 |
 | 3：综合项目 | 5.3 | 视频 + 模型 + 完整工程 | 较高 |
 
 ## API Documentation Links
